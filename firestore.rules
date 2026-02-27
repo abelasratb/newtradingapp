@@ -1,0 +1,37 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Default rule: Deny everything
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Rules for User Profiles and their subcollections
+    match /users/{userId} {
+      
+      // Allow user to read their own profile
+      allow read: if request.auth != null && request.auth.uid == userId;
+
+      // Allow creation only if role is 'user' and isPaid is false (if provided)
+      allow create: if request.auth != null && request.auth.uid == userId
+                    && request.resource.data.get('role', 'user') == 'user'
+                    && request.resource.data.get('isPaid', false) == false;
+      
+      // Allow update only if sensitive fields (role, isPaid) are not changed
+      allow update: if request.auth != null && request.auth.uid == userId
+                    && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'isPaid']));
+      
+      // Rules for User Progress Data (completed chapters, quiz scores)
+      match /data/progress {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+      
+      // Rules for User Journal 
+      match /journal/{entryId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+  }
+}
