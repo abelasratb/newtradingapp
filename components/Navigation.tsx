@@ -1,8 +1,8 @@
 
 import React from 'react';
 import { Chapter, UserProgress, User } from '../types.ts';
-import { 
-  CheckCircle2, Circle, TrendingUp, Activity, 
+import {
+  CheckCircle2, Circle, TrendingUp, Activity,
   BrainCircuit, Newspaper, Calendar,
   HeartPulse, ScrollText, ShieldCheck,
   BookOpen, Gamepad2, Users
@@ -17,19 +17,19 @@ interface NavigationProps {
   currentUser: User | null;
   isOpen: boolean;
   onCloseMobile: () => void;
+  langMode: 'english' | 'amharic';
 }
 
-export const Navigation: React.FC<NavigationProps> = ({ 
-  chapters, currentChapterId, currentView, onNavigate, progress, currentUser, isOpen, onCloseMobile
+export const Navigation: React.FC<NavigationProps> = ({
+  chapters, currentChapterId, currentView, onNavigate, progress, currentUser, isOpen, onCloseMobile, langMode
 }) => {
   const NavBtn = ({ view, icon: Icon, label, color = "indigo" }: any) => (
     <button
       onClick={() => onNavigate(view)}
-      className={`w-full text-left px-4 py-3.5 rounded-xl flex items-center gap-3.5 transition-all ${
-        currentView === view 
-          ? `bg-${color}-600/20 text-${color}-400 border border-${color}-500/30 shadow-lg shadow-${color}-900/10` 
+      className={`w-full text-left px-4 py-3.5 rounded-xl flex items-center gap-3.5 transition-all ${currentView === view
+          ? `bg-${color}-600/20 text-${color}-400 border border-${color}-500/30 shadow-lg shadow-${color}-900/10`
           : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'
-      }`}
+        }`}
     >
       <Icon size={20} className="shrink-0" />
       <span className="text-[13px] font-black uppercase tracking-[0.05em]">{label}</span>
@@ -51,43 +51,42 @@ export const Navigation: React.FC<NavigationProps> = ({
 
         <nav className="flex-1 space-y-1 overflow-y-auto pr-2 custom-scrollbar">
           <div className="space-y-1.5 mb-10">
-            <NavBtn view="dashboard" icon={TrendingUp} label="Dashboard" />
-            <NavBtn view="simulator" icon={Activity} label="Simulator" />
-            <NavBtn view="game" icon={Gamepad2} label="Price Game" color="emerald" />
-            <NavBtn view="forum" icon={Users} label="Community" color="blue" />
-            <NavBtn view="journal" icon={ScrollText} label="Journal" />
-            <NavBtn view="trainer" icon={BrainCircuit} label="Pattern Lab" />
-            <NavBtn view="fundamental" icon={Newspaper} label="News IQ" />
-            <NavBtn view="calendar" icon={Calendar} label="Calendar" />
-            <NavBtn view="mindset" icon={HeartPulse} label="Mindset" />
-            
+            <NavBtn view="dashboard" icon={TrendingUp} label={langMode === 'amharic' ? 'ዳሽቦርድ' : 'Dashboard'} />
+            <NavBtn view="simulator" icon={Activity} label={langMode === 'amharic' ? 'ሲሙሌተር' : 'Simulator'} />
+            <NavBtn view="game" icon={Gamepad2} label={langMode === 'amharic' ? 'የዋጋ ጨዋታ' : 'Price Game'} color="emerald" />
+            <NavBtn view="forum" icon={Users} label={langMode === 'amharic' ? 'ማህበረሰብ' : 'Community'} color="blue" />
+            <NavBtn view="journal" icon={ScrollText} label={langMode === 'amharic' ? 'ጆርናል' : 'Journal'} />
+            <NavBtn view="trainer" icon={BrainCircuit} label={langMode === 'amharic' ? 'የፓተርን ላብራቶሪ' : 'Pattern Lab'} />
+            <NavBtn view="fundamental" icon={Newspaper} label={langMode === 'amharic' ? 'የዜና ትንተና' : 'News IQ'} />
+            <NavBtn view="calendar" icon={Calendar} label={langMode === 'amharic' ? 'የቀን መቁጠሪያ' : 'Calendar'} />
+            <NavBtn view="mindset" icon={HeartPulse} label={langMode === 'amharic' ? 'ስነ-ልቦና' : 'Mindset'} />
+
             {currentUser?.role === 'admin' && (
               <div className="pt-2">
-                <NavBtn view="admin" icon={ShieldCheck} label="Admin Panel" color="rose" />
+                <NavBtn view="admin" icon={ShieldCheck} label={langMode === 'amharic' ? 'አስተዳዳሪ' : 'Admin Panel'} color="rose" />
               </div>
             )}
           </div>
-          
+
           <div className="pt-2 pb-3 px-4 flex items-center justify-between border-t border-slate-800/50 mt-4 mb-2">
-             <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] flex items-center gap-2">
-               <BookOpen size={14} className="text-indigo-500" /> Curriculum
-             </p>
+            <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] flex items-center gap-2">
+              <BookOpen size={14} className="text-indigo-500" /> {langMode === 'amharic' ? 'ትምህርቶች' : 'Curriculum'}
+            </p>
           </div>
-          
+
           <div className="space-y-1.5">
             {chapters.map(ch => {
               const isActive = currentView === 'chapter' && currentChapterId === ch.id;
               const isCompleted = progress.completedChapters.includes(ch.id);
 
               return (
-                <button 
-                  key={ch.id} 
-                  onClick={() => onNavigate('chapter', ch.id)} 
-                  className={`w-full text-left px-4 py-3.5 rounded-xl flex items-center gap-3.5 transition-all group/item ${
-                    isActive 
-                      ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 shadow-lg shadow-indigo-900/10' 
+                <button
+                  key={ch.id}
+                  onClick={() => onNavigate('chapter', ch.id)}
+                  className={`w-full text-left px-4 py-3.5 rounded-xl flex items-center gap-3.5 transition-all group/item ${isActive
+                      ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 shadow-lg shadow-indigo-900/10'
                       : 'text-slate-400 hover:bg-slate-800/50 hover:text-slate-200'
-                  }`}
+                    }`}
                 >
                   <div className="shrink-0">
                     {isCompleted ? (
@@ -97,7 +96,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                     )}
                   </div>
                   <span className="text-[13px] font-black uppercase tracking-[0.05em] truncate">
-                    {ch.title.split(':').pop()?.trim() || ch.title}
+                    {langMode === 'amharic' ? ch.titleAmharic : (ch.title.split(':').pop()?.trim() || ch.title)}
                   </span>
                 </button>
               );
@@ -107,13 +106,12 @@ export const Navigation: React.FC<NavigationProps> = ({
 
         {currentUser && (
           <div className="mt-auto pt-6 border-t border-slate-800/80">
-            <button 
+            <button
               onClick={() => onNavigate('profile')}
-              className={`w-full flex items-center gap-3 px-2 py-2 rounded-2xl border transition-all group ${
-                currentView === 'profile' 
-                  ? 'bg-indigo-600/20 border-indigo-500/30' 
+              className={`w-full flex items-center gap-3 px-2 py-2 rounded-2xl border transition-all group ${currentView === 'profile'
+                  ? 'bg-indigo-600/20 border-indigo-500/30'
                   : 'bg-slate-900/50 border-slate-800/50 hover:bg-slate-800 hover:border-slate-700'
-              }`}
+                }`}
             >
               <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 font-black text-sm group-hover:scale-105 transition-transform">
                 {currentUser.name?.[0].toUpperCase() || 'T'}
@@ -123,7 +121,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                   {currentUser.name || 'Trader'}
                 </p>
                 <p className="text-[9px] font-black text-slate-500 truncate uppercase tracking-[0.1em] mt-0.5 group-hover:text-indigo-400 transition-colors">
-                  View Profile
+                  {langMode === 'amharic' ? 'መገለጫ ይመልከቱ' : 'View Profile'}
                 </p>
               </div>
             </button>

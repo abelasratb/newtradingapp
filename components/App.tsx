@@ -69,18 +69,18 @@ const App = () => {
           // Fetch user profile from Firestore
           const userProfile = await dbService.getUserProfile(firebaseUser.uid);
           const isHardcodedAdmin = firebaseUser.email === 'abelasrat0@gmail.com';
-          
+
           if (userProfile) {
             // Apply hardcoded admin override if needed
-            const finalUser = { 
-              ...userProfile, 
+            const finalUser = {
+              ...userProfile,
               role: isHardcodedAdmin ? 'admin' : userProfile.role,
               isPaid: isHardcodedAdmin ? true : userProfile.isPaid
             };
-            
+
             setCurrentUser(finalUser);
             localStorage.setItem('trade_user', JSON.stringify(finalUser)); // Sync to local
-            
+
             // Fetch User Data in parallel
             const [fetchedProgress, fetchedJournal] = await Promise.all([
               dbService.getUserProgress(firebaseUser.uid),
@@ -92,30 +92,30 @@ const App = () => {
           } else {
             // Profile missing in DB (Race Condition or DB Error), construct temporary user
             console.warn("Profile not found in DB yet. Creating temporary session.");
-            
+
             // CHECK LOCAL STORAGE FIRST to recover payment status if it exists
             const cached = localStorage.getItem('trade_user');
             let tempUser: User;
-            
+
             if (cached && JSON.parse(cached).id === firebaseUser.uid) {
-                console.log("Restoring session from local cache to preserve payment state.");
-                tempUser = JSON.parse(cached);
-                // Ensure auth details are up to date
-                tempUser.identifier = firebaseUser.email || tempUser.identifier;
-                // Force admin check on restore
-                if (isHardcodedAdmin) {
-                    tempUser.role = 'admin';
-                    tempUser.isPaid = true;
-                }
+              console.log("Restoring session from local cache to preserve payment state.");
+              tempUser = JSON.parse(cached);
+              // Ensure auth details are up to date
+              tempUser.identifier = firebaseUser.email || tempUser.identifier;
+              // Force admin check on restore
+              if (isHardcodedAdmin) {
+                tempUser.role = 'admin';
+                tempUser.isPaid = true;
+              }
             } else {
-                tempUser = {
-                    id: firebaseUser.uid,
-                    name: firebaseUser.displayName || 'Trader',
-                    identifier: firebaseUser.email || '',
-                    method: 'email',
-                    role: isHardcodedAdmin ? 'admin' : 'user',
-                    isPaid: isHardcodedAdmin ? true : false
-                };
+              tempUser = {
+                id: firebaseUser.uid,
+                name: firebaseUser.displayName || 'Trader',
+                identifier: firebaseUser.email || '',
+                method: 'email',
+                role: isHardcodedAdmin ? 'admin' : 'user',
+                isPaid: isHardcodedAdmin ? true : false
+              };
             }
             setCurrentUser(tempUser);
           }
@@ -184,7 +184,7 @@ const App = () => {
     const isPassing = percentage >= 70;
 
     const newProgress = { ...progress };
-    
+
     // Update Logic locally
     if (isPassing && !newProgress.completedChapters.includes(chapterId)) {
       newProgress.completedChapters = [...newProgress.completedChapters, chapterId];
@@ -207,7 +207,7 @@ const App = () => {
   const handleAddJournalEntry = async (entry: JournalEntry) => {
     if (!currentUser) return;
     setJournal([entry, ...journal]);
-    
+
     if (offlineMode) {
       const updatedJournal = [entry, ...journal];
       localStorage.setItem(`trade_journal_${currentUser.id}`, JSON.stringify(updatedJournal));
@@ -220,10 +220,10 @@ const App = () => {
     if (currentUser) {
       const updatedUser = { ...currentUser, isPaid: true };
       setCurrentUser(updatedUser);
-      
+
       // CRITICAL: Save to localStorage immediately so a reload maintains payment status
       localStorage.setItem('trade_user', JSON.stringify(updatedUser));
-      
+
       if (!offlineMode) {
         await dbService.updateUserPaymentStatus(currentUser.id);
       }
@@ -253,33 +253,49 @@ const App = () => {
   };
 
   if (loading) return <div className="h-screen bg-trade-dark flex items-center justify-center text-trade-primary"><Loader2 className="animate-spin" size={48} /></div>;
-  
+
   if (!currentUser) return <Auth onLogin={handleManualLogin} />;
-  
+
   // Show payment screen ONLY if user is not paid and not an admin
   if (!currentUser.isPaid && currentUser.role !== 'admin') {
     return (
-      <PaymentScreen 
-        userName={currentUser.name} 
-        onPaymentSuccess={handlePaymentSuccess} 
+      <PaymentScreen
+        userName={currentUser.name}
+        onPaymentSuccess={handlePaymentSuccess}
       />
     );
   }
 
   const currentChapter = currentChapterId ? chapters.find(c => c.id === currentChapterId) : null;
 
+  const viewTitles = {
+    dashboard: langMode === 'amharic' ? 'ዳሽቦርድ' : 'Dashboard',
+    simulator: langMode === 'amharic' ? 'ሲሙሌተር' : 'Simulator',
+    game: langMode === 'amharic' ? 'የዋጋ ጨዋታ' : 'Price Game',
+    forum: langMode === 'amharic' ? 'ማህበረሰብ' : 'Community',
+    journal: langMode === 'amharic' ? 'ጆርናል' : 'Journal',
+    trainer: langMode === 'amharic' ? 'የፓተርን ላብራቶሪ' : 'Pattern Lab',
+    fundamental: langMode === 'amharic' ? 'የዜና ትንተና' : 'News IQ',
+    calendar: langMode === 'amharic' ? 'የቀን መቁጠሪያ' : 'Calendar',
+    mindset: langMode === 'amharic' ? 'ስነ-ልቦና' : 'Mindset',
+    admin: langMode === 'amharic' ? 'የአስተዳዳሪ ፓነል' : 'Admin Panel',
+    profile: langMode === 'amharic' ? 'መገለጫ' : 'Profile',
+    chapter: currentChapter ? (langMode === 'amharic' ? currentChapter.titleAmharic : currentChapter.title) : ''
+  };
+
   return (
     <HashRouter>
       <div className="flex h-screen bg-trade-dark overflow-hidden font-sans">
-        <Navigation 
-          chapters={chapters} 
-          currentChapterId={currentChapterId} 
-          currentView={currentView} 
-          onNavigate={handleNavigate} 
-          progress={progress} 
-          currentUser={currentUser} 
-          isOpen={isSidebarOpen} 
-          onCloseMobile={() => setIsSidebarOpen(false)} 
+        <Navigation
+          chapters={chapters}
+          currentChapterId={currentChapterId}
+          currentView={currentView}
+          onNavigate={handleNavigate}
+          progress={progress}
+          currentUser={currentUser}
+          isOpen={isSidebarOpen}
+          onCloseMobile={() => setIsSidebarOpen(false)}
+          langMode={langMode}
         />
 
         <main className="flex-1 flex flex-col h-full overflow-hidden w-full relative">
@@ -290,7 +306,7 @@ const App = () => {
               </button>
               <div className="flex items-center gap-3 min-w-0">
                 <h2 className="font-semibold text-white truncate text-lg uppercase tracking-widest">
-                  {currentView}
+                  {viewTitles[currentView as keyof typeof viewTitles] || currentView}
                 </h2>
                 <div className="hidden sm:flex items-center gap-2 px-2.5 py-1 bg-slate-900 border border-slate-800 rounded-lg shrink-0">
                   {offlineMode ? (
@@ -307,26 +323,45 @@ const App = () => {
                 </div>
               </div>
             </div>
-            <button onClick={handleLogout} className="p-2 text-slate-400 hover:text-red-400">
-              <LogOut size={18} />
-            </button>
+
+            <div className="flex items-center gap-4">
+              <div className="hidden sm:flex bg-slate-900/80 p-1 rounded-xl border border-slate-700">
+                <button
+                  onClick={() => setLangMode('english')}
+                  className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all flex items-center gap-1.5 uppercase tracking-widest ${langMode === 'english' ? 'bg-trade-primary text-white shadow-lg' : 'text-slate-500 hover:text-white'
+                    }`}
+                >
+                  <Type size={12} /> EN
+                </button>
+                <button
+                  onClick={() => setLangMode('amharic')}
+                  className={`px-3 py-1.5 rounded-lg text-[10px] font-black transition-all flex items-center gap-1.5 font-sans uppercase tracking-widest ${langMode === 'amharic' ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-500 hover:text-white'
+                    }`}
+                >
+                  <Globe size={12} /> አማ
+                </button>
+              </div>
+              <button onClick={handleLogout} className="p-2 text-slate-400 hover:text-red-400">
+                <LogOut size={18} />
+              </button>
+            </div>
           </header>
 
           <div className="flex-1 overflow-y-auto p-4 lg:p-8">
             <div className="mx-auto max-w-5xl pb-24 space-y-8">
               {currentView === 'dashboard' && (
-                <Dashboard progress={progress} chapters={chapters} onStartChapter={(id) => handleNavigate('chapter', id)} />
+                <Dashboard progress={progress} chapters={chapters} onStartChapter={(id) => handleNavigate('chapter', id)} langMode={langMode} />
               )}
               {currentView === 'profile' && (
-                <UserProfile 
-                  user={currentUser} 
-                  progress={progress} 
-                  chapters={chapters} 
-                  onUpdateUser={handleUpdateUser} 
-                  onLogout={handleLogout} 
+                <UserProfile
+                  user={currentUser}
+                  progress={progress}
+                  chapters={chapters}
+                  onUpdateUser={handleUpdateUser}
+                  onLogout={handleLogout}
                 />
               )}
-              {currentView === 'simulator' && <TradingSimulator onAddJournal={handleAddJournalEntry} />} 
+              {currentView === 'simulator' && <TradingSimulator onAddJournal={handleAddJournalEntry} />}
               {currentView === 'game' && <PriceActionGame />}
               {currentView === 'forum' && <CommunityForum currentUser={currentUser} />}
               {currentView === 'trainer' && <PatternTrainer currentUser={currentUser} />}
@@ -335,14 +370,14 @@ const App = () => {
               {currentView === 'mindset' && <MindsetHub />}
               {currentView === 'journal' && <TradingJournal entries={journal} />}
               {currentView === 'mentor' && <AiMentor journal={journal} progress={progress} chapters={chapters} />}
-              
+
               {currentView === 'admin' && currentUser.role === 'admin' && (
-                <AdminPanel 
-                  chapters={chapters} 
-                  setChapters={setChapters} 
-                  allUserData={allUserData} 
-                  setAllUserData={setAllUserData} 
-                  createSnapshot={createSnapshot} 
+                <AdminPanel
+                  chapters={chapters}
+                  setChapters={setChapters}
+                  allUserData={allUserData}
+                  setAllUserData={setAllUserData}
+                  createSnapshot={createSnapshot}
                   snapshots={snapshots}
                   currentVersion={APP_VERSION}
                 />
@@ -352,40 +387,23 @@ const App = () => {
                   <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
                     <div className="flex bg-slate-800 p-1 rounded-xl w-fit border border-slate-700">
                       {['content', 'quiz', 'flashcards'].map(t => (
-                        <button 
-                          key={t} 
-                          onClick={() => setActiveTab(t as any)} 
+                        <button
+                          key={t}
+                          onClick={() => setActiveTab(t as any)}
                           className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase transition-all ${activeTab === t ? 'bg-trade-primary text-white' : 'text-slate-400'}`}
                         >
-                          {t}
+                          {t === 'content' && (langMode === 'amharic' ? 'ይዘት' : 'Content')}
+                          {t === 'quiz' && (langMode === 'amharic' ? 'ጥያቄ' : 'Quiz')}
+                          {t === 'flashcards' && (langMode === 'amharic' ? 'ፍላሽካርድ' : 'Flashcards')}
                         </button>
                       ))}
                     </div>
-
-                    <div className="bg-slate-900/80 p-1 rounded-xl border border-slate-700 flex self-start">
-                      <button
-                        onClick={() => setLangMode('english')}
-                        className={`px-4 py-2 rounded-lg text-[10px] font-black transition-all flex items-center gap-2 uppercase tracking-widest ${
-                          langMode === 'english' ? 'bg-trade-primary text-white shadow-lg' : 'text-slate-500 hover:text-white'
-                        }`}
-                      >
-                        <Type size={14} /> English
-                      </button>
-                      <button
-                        onClick={() => setLangMode('amharic')}
-                        className={`px-4 py-2 rounded-lg text-[10px] font-black transition-all flex items-center gap-2 font-sans uppercase tracking-widest ${
-                          langMode === 'amharic' ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-500 hover:text-white'
-                        }`}
-                      >
-                        <Globe size={14} /> Amharic
-                      </button>
-                    </div>
                   </div>
-                  
+
                   {activeTab === 'content' && (
-                    <ChapterContent 
-                      chapter={currentChapter} 
-                      langMode={langMode} 
+                    <ChapterContent
+                      chapter={currentChapter}
+                      langMode={langMode}
                       onAction={(tab) => setActiveTab(tab)}
                       isCompleted={progress.completedChapters.includes(currentChapter.id)}
                     />
@@ -398,21 +416,21 @@ const App = () => {
           </div>
 
           <footer className="h-10 bg-slate-950 border-t border-slate-800 flex items-center overflow-hidden shrink-0 z-30">
-             <div className="animate-ticker whitespace-nowrap flex items-center gap-12 px-6">
-                {[
-                  { p: 'XAU/USD', v: '2742.45', d: '+1.2%' },
-                  { p: 'EUR/USD', v: '1.08542', d: '-0.3%' },
-                  { p: 'GBP/USD', v: '1.26410', d: '+0.1%' },
-                  { p: 'USD/JPY', v: '149.230', d: '+0.4%' },
-                  { p: 'BTC/USD', v: '98432.10', d: '+2.1%' }
-                ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-2 font-mono text-[10px] font-bold">
-                    <span className="text-slate-500">{item.p}</span>
-                    <span className="text-white">{item.v}</span>
-                    <span className="text-emerald-500">{item.d}</span>
-                  </div>
-                ))}
-             </div>
+            <div className="animate-ticker whitespace-nowrap flex items-center gap-12 px-6">
+              {[
+                { p: 'XAU/USD', v: '2742.45', d: '+1.2%' },
+                { p: 'EUR/USD', v: '1.08542', d: '-0.3%' },
+                { p: 'GBP/USD', v: '1.26410', d: '+0.1%' },
+                { p: 'USD/JPY', v: '149.230', d: '+0.4%' },
+                { p: 'BTC/USD', v: '98432.10', d: '+2.1%' }
+              ].map((item, i) => (
+                <div key={i} className="flex items-center gap-2 font-mono text-[10px] font-bold">
+                  <span className="text-slate-500">{item.p}</span>
+                  <span className="text-white">{item.v}</span>
+                  <span className="text-emerald-500">{item.d}</span>
+                </div>
+              ))}
+            </div>
           </footer>
         </main>
       </div>
